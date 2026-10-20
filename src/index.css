@@ -1,0 +1,589 @@
+/* ---------- Базовые переменные и сброс ---------- */
+:root {
+  --bg: #0b0d12;
+  --bg-lit: #15120a;
+  --surface: #151922;
+  --surface-2: #1d2230;
+  --border: #262c3a;
+  --text: #e8eaf0;
+  --muted: #8b93a7;
+  --warm: #ffd23f;
+  --warm-strong: #ffb300;
+  --green: #22c55e;
+  --red: #ef4444;
+  --radius: 16px;
+  --transition: 400ms ease;
+
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* ---------- Каркас страницы ---------- */
+.app {
+  min-height: 100vh;
+  padding: 16px;
+  /* Тёплая подсветка фона при включённой лампе */
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 190, 40, 0) 0%, transparent 60%), var(--bg);
+  transition: background var(--transition);
+}
+
+.app--lit {
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 190, 40, 0.12) 0%, transparent 60%), var(--bg);
+}
+
+.app__header {
+  max-width: 1100px;
+  margin: 0 auto 8px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.app__title {
+  margin: 0;
+  font-size: 1.4rem;
+  letter-spacing: 0.02em;
+}
+
+.app__device {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.app__main {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+/* ПК: лампа слева, панели справа */
+@media (min-width: 900px) {
+  .app {
+    padding: 24px 32px;
+  }
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding-top: 8px;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---------- Лампочка ---------- */
+.bulb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: clamp(280px, 48vh, 400px);
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 50% 50% 24px 24px;
+}
+
+.bulb:disabled {
+  cursor: default;
+}
+
+.bulb:focus-visible {
+  outline: 2px dashed var(--warm);
+  outline-offset: 8px;
+}
+
+.bulb__svg {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  /* Одинаковый набор функций в обоих состояниях — чтобы фильтр плавно интерполировался */
+  filter: drop-shadow(0 0 0 rgba(255, 200, 60, 0)) drop-shadow(0 0 0 rgba(255, 160, 0, 0));
+  transition: filter var(--transition), transform 200ms ease;
+}
+
+.bulb:not(:disabled):hover .bulb__svg {
+  transform: scale(1.02);
+}
+
+.bulb:not(:disabled):active .bulb__svg {
+  transform: scale(0.98);
+}
+
+.bulb--on .bulb__svg {
+  filter: drop-shadow(0 0 22px rgba(255, 210, 70, 0.9)) drop-shadow(0 0 70px rgba(255, 170, 0, 0.6));
+}
+
+.bulb__glass-on {
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.bulb--on .bulb__glass-on {
+  opacity: 1;
+}
+
+.bulb__filament {
+  stroke: #6b7280;
+  transition: stroke var(--transition);
+}
+
+.bulb--on .bulb__filament {
+  stroke: #fff4c2;
+}
+
+/* Ореол: появляется плавно, внутри — бесконечная пульсация */
+.bulb__halo {
+  position: absolute;
+  inset: -15% -35% 20%;
+  opacity: 0;
+  transition: opacity var(--transition);
+  pointer-events: none;
+}
+
+.bulb--on .bulb__halo {
+  opacity: 1;
+}
+
+.bulb__halo-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 210, 70, 0.35) 0%, rgba(255, 170, 0, 0.12) 40%, transparent 70%);
+  animation: halo-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes halo-pulse {
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+/* Скелетон на время первичной загрузки */
+.bulb--loading .bulb__svg {
+  filter: grayscale(1) brightness(0.8);
+  animation: skeleton 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.bulb__spinner {
+  position: absolute;
+  z-index: 2;
+  top: 35%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ---------- Спиннер ---------- */
+.spinner {
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Переключатель ВКЛ/ВЫКЛ ---------- */
+.power {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  width: min(280px, 100%);
+  height: 72px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+}
+
+.power--on {
+  background: #2b2410;
+  border-color: rgba(255, 200, 60, 0.5);
+  box-shadow: 0 0 24px rgba(255, 190, 40, 0.25);
+}
+
+.power:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.power:focus-visible {
+  outline: 2px solid var(--warm);
+  outline-offset: 3px;
+}
+
+.power__label {
+  z-index: 1;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  transition: color var(--transition);
+}
+
+.power:not(.power--on) .power__label--off,
+.power--on .power__label--on {
+  color: transparent;
+}
+
+.power__knob {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: grid;
+  place-items: center;
+  width: calc(50% - 6px);
+  height: calc(100% - 12px);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  transition: transform var(--transition), background var(--transition), color var(--transition);
+}
+
+.power--on .power__knob {
+  transform: translateX(100%);
+  background: linear-gradient(135deg, var(--warm), var(--warm-strong));
+  color: #3b2a00;
+}
+
+/* ---------- Статус ---------- */
+.status {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.status__text {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--muted);
+  transition: color var(--transition);
+}
+
+.status__text--on {
+  color: var(--warm);
+}
+
+.status__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px 16px;
+  font-size: 0.9rem;
+}
+
+.status__updated {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.conn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.conn__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.conn--online .conn__dot {
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+}
+
+.conn--offline {
+  color: #fca5a5;
+}
+
+.conn--offline .conn__dot {
+  background: var(--red);
+  box-shadow: 0 0 8px var(--red);
+}
+
+/* ---------- Кнопки ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, opacity 150ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: #3a4256;
+  background: #252b3b;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--warm);
+  outline-offset: 2px;
+}
+
+.btn--ghost {
+  background: transparent;
+}
+
+.btn--chip {
+  flex: 1;
+  min-height: 44px;
+  font-weight: 600;
+}
+
+/* ---------- Карточки ---------- */
+.card {
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.card__title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.card__hint {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* ---------- Таймер ---------- */
+.timer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.timer__time {
+  font-size: 2.2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--warm);
+}
+
+.timer__bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.timer__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--warm-strong), var(--warm));
+  transition: width 250ms linear;
+}
+
+.timer__options {
+  display: flex;
+  gap: 8px;
+}
+
+/* ---------- Журнал ---------- */
+.log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.log__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-size: 0.9rem;
+  border-left: 3px solid var(--green);
+}
+
+.log__item--fail {
+  border-left-color: var(--red);
+}
+
+.log__time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.log__action {
+  font-weight: 700;
+  min-width: 44px;
+  color: var(--muted);
+}
+
+.log__action--on {
+  color: var(--warm);
+}
+
+.log__source {
+  font-size: 0.75rem;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #2a3042;
+  color: var(--muted);
+}
+
+.log__result {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.log__item--ok .log__result {
+  color: #86efac;
+}
+
+.log__item--fail .log__result {
+  color: #fca5a5;
+}
+
+/* ---------- Уведомления ---------- */
+.toasts {
+  position: fixed;
+  z-index: 100;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: min(420px, 100%);
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #2a1517;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: toast-in 250ms ease-out;
+}
+
+.toast--info {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+.toast__close {
+  margin-left: auto;
+  border: none;
+  background: none;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* Уважаем системную настройку «уменьшить движение» */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
